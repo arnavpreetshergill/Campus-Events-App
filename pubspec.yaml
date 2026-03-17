@@ -1,0 +1,27 @@
+name: atl_project_2
+description: "Distributed Campus Event Management System - Decentralized Client"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_secure_storage: ^9.0.0
+  encrypt: ^5.0.3
+  provider: ^6.0.5
+  http: ^1.1.0
+  crypto: ^3.0.7
+  pointycastle: ^3.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
