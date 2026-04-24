@@ -23,15 +23,30 @@ class EventFeedProvider extends ChangeNotifier {
   EventFeedFilter get filter => _filter;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  List<String> get categories {
+    final values = _events.map((event) => event.category).toSet().toList()
+      ..sort();
+    return values;
+  }
 
-  List<CampusEvent> get filteredEvents {
-    switch (_filter) {
+  List<CampusEvent> filteredEventsFor(
+    CustodianAccessSnapshot access, {
+    EventFeedFilter? filter,
+  }) {
+    final effectiveFilter = filter ?? _filter;
+    final visibleEvents = access.isAdmin
+        ? _events
+        : _events.where((event) => !event.isEncrypted).toList();
+
+    switch (effectiveFilter) {
       case EventFeedFilter.all:
-        return _events;
+        return visibleEvents;
       case EventFeedFilter.publicOnly:
-        return _events.where((event) => !event.isEncrypted).toList();
+        return visibleEvents.where((event) => !event.isEncrypted).toList();
       case EventFeedFilter.secureOnly:
-        return _events.where((event) => event.isEncrypted).toList();
+        return access.isAdmin
+            ? visibleEvents.where((event) => event.isEncrypted).toList()
+            : visibleEvents;
     }
   }
 

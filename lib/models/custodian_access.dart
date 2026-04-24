@@ -1,25 +1,16 @@
-enum CustodianKeyType { guest, aes, rsa, hybrid }
+enum CustodianKeyType { guest, admin }
 
 class CustodianAccessSnapshot {
-  const CustodianAccessSnapshot({this.aesPassphrase, this.rsaPrivateKeyPem});
+  const CustodianAccessSnapshot({this.aesPassphrase});
 
   final String? aesPassphrase;
-  final String? rsaPrivateKeyPem;
 
   bool get hasAesAccess => aesPassphrase != null && aesPassphrase!.isNotEmpty;
-  bool get hasRsaAccess =>
-      rsaPrivateKeyPem != null && rsaPrivateKeyPem!.isNotEmpty;
-  bool get isAdmin => hasAesAccess || hasRsaAccess;
+  bool get isAdmin => hasAesAccess;
 
   CustodianKeyType get keyType {
-    if (hasAesAccess && hasRsaAccess) {
-      return CustodianKeyType.hybrid;
-    }
     if (hasAesAccess) {
-      return CustodianKeyType.aes;
-    }
-    if (hasRsaAccess) {
-      return CustodianKeyType.rsa;
+      return CustodianKeyType.admin;
     }
     return CustodianKeyType.guest;
   }
@@ -28,12 +19,8 @@ class CustodianAccessSnapshot {
     switch (keyType) {
       case CustodianKeyType.guest:
         return 'Standard';
-      case CustodianKeyType.aes:
-        return 'Shared access';
-      case CustodianKeyType.rsa:
-        return 'Admin key';
-      case CustodianKeyType.hybrid:
-        return 'Full access';
+      case CustodianKeyType.admin:
+        return 'Admin';
     }
   }
 }

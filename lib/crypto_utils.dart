@@ -12,16 +12,7 @@ class DemoCustodianKeys {
   static const String adminAesPassphrase = 'MIT-ZEROTRUST-AES-2026';
   static const String backendSigningSecret = 'atl-campus-grid-integrity-node';
 
-  static const String rsaPublicKeyPem = '''
------BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDVlAIt/S9d/6RpzJbA9FwpjWhN
-Lze3teCX7Qq4lNwyp6mzZwnQYkut8MBHIC3gQBcg7skfXRvLFK8ciPC8Rs6rU7SP
-ixaOAo+YvSa5hnvuOtaky8il4Wo2ScSg4bt3aOy7gci5T6Xyli2b9Z4qBmsIkTbK
-vM1n889yLmpGmNnb1wIDAQAB
------END PUBLIC KEY-----
-''';
-
-  static const String rsaPrivateKeyPem = '''
+  static const String legacyRsaPrivateKeyPem = '''
 -----BEGIN PRIVATE KEY-----
 MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBANWUAi39L13/pGnM
 lsD0XCmNaE0vN7e14JftCriU3DKnqbNnCdBiS63wwEcgLeBAFyDuyR9dG8sUrxyI
@@ -42,15 +33,10 @@ QP9x5nDYscBD6A==
 }
 
 class SealedPayload {
-  const SealedPayload({
-    required this.cipherText,
-    required this.iv,
-    this.wrappedKey,
-  });
+  const SealedPayload({required this.cipherText, required this.iv});
 
   final String cipherText;
   final String iv;
-  final String? wrappedKey;
 }
 
 class CryptoUtils {
@@ -60,11 +46,6 @@ class CryptoUtils {
 
   static bool isValidDemoAesPassphrase(String candidate) {
     return candidate.trim() == DemoCustodianKeys.adminAesPassphrase;
-  }
-
-  static bool isValidDemoRsaPrivateKey(String candidate) {
-    return normalizePem(candidate) ==
-        normalizePem(DemoCustodianKeys.rsaPrivateKeyPem);
   }
 
   static String signPayload(String canonicalPayload) {
@@ -105,38 +86,16 @@ class CryptoUtils {
     }
   }
 
-  static SealedPayload encryptWithRsaEnvelope(String plainText) {
-    final aesKey = enc.Key.fromSecureRandom(32);
-    final iv = enc.IV.fromSecureRandom(16);
-    final aesEncrypter = enc.Encrypter(enc.AES(aesKey, mode: enc.AESMode.cbc));
-    final encryptedPayload = aesEncrypter.encrypt(plainText, iv: iv);
-
-    final parser = enc.RSAKeyParser();
-    final publicKey =
-        parser.parse(DemoCustodianKeys.rsaPublicKeyPem) as RSAPublicKey;
-    final rsaEncrypter = enc.Encrypter(
-      enc.RSA(publicKey: publicKey, encoding: enc.RSAEncoding.OAEP),
-    );
-
-    final wrappedKey = rsaEncrypter.encrypt(base64Encode(aesKey.bytes)).base64;
-
-    return SealedPayload(
-      cipherText: encryptedPayload.base64,
-      iv: iv.base64,
-      wrappedKey: wrappedKey,
-    );
-  }
-
-  static String? decryptRsaPayload({
+  static String? decryptLegacyRsaPayload({
     required String cipherText,
     required String ivBase64,
     required String wrappedKey,
-    required String privateKeyPem,
   }) {
     try {
       final parser = enc.RSAKeyParser();
       final privateKey =
-          parser.parse(normalizePem(privateKeyPem)) as RSAPrivateKey;
+          parser.parse(normalizePem(DemoCustodianKeys.legacyRsaPrivateKeyPem))
+              as RSAPrivateKey;
       final rsaEncrypter = enc.Encrypter(
         enc.RSA(privateKey: privateKey, encoding: enc.RSAEncoding.OAEP),
       );
@@ -171,18 +130,6 @@ class CryptoUtils {
           cipherText: event.payload,
           ivBase64: event.iv,
           passphrase: access.aesPassphrase!,
-        );
-      case EventEncryptionMode.rsaEnvelope:
-        if (!access.hasRsaAccess ||
-            event.iv.isEmpty ||
-            event.wrappedKey == null) {
-          return null;
-        }
-        return decryptRsaPayload(
-          cipherText: event.payload,
-          ivBase64: event.iv,
-          wrappedKey: event.wrappedKey!,
-          privateKeyPem: access.rsaPrivateKeyPem!,
         );
     }
   }
